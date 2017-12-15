@@ -43,6 +43,7 @@ public class SimpleGameEngine extends Activity {
 
         // This is our thread
         Thread gameThread = null;
+        public static final boolean DEBUG_MODE = false;
 
         // This is new. We need a SurfaceHolder
         // When we use Paint and Canvas in a thread
@@ -125,12 +126,12 @@ public class SimpleGameEngine extends Activity {
             buttonToLeftArea [0] = 10;
             buttonToLeftArea [1] = wholeImageHeight + 40;
             buttonToLeftArea [2] = buttonToLeft.getWidth() + buttonToLeftArea[0];
-            buttonToLeftArea [3] = buttonToLeft.getHeight() + buttonToLeftArea[2];
+            buttonToLeftArea [3] = buttonToLeft.getHeight() + buttonToLeftArea[1];
 
             buttonToRightArea [0] = 310;
             buttonToRightArea [1] = wholeImageHeight + 40;
             buttonToRightArea [2] = buttonToRight.getWidth() + buttonToRightArea[0];
-            buttonToRightArea [3] = buttonToRight.getHeight() + buttonToRightArea[2];
+            buttonToRightArea [3] = buttonToRight.getHeight() + buttonToRightArea[1];
 
             imageCropWidth = wholeImageWidth / 3;
             imageCropHeight = wholeImageHeight / 4;
@@ -149,6 +150,9 @@ public class SimpleGameEngine extends Activity {
 
         public Bitmap GameViewUpdate (int c, int r){
             bitmapBob = BitmapFactory.decodeResource(this.getResources(), R.drawable.chibi1);
+
+            if (movingToLeft) { row = 1; };
+            if (movingToRight) {row = 2; };
 
             wholeImageWidth = bitmapBob.getWidth();
             wholeImageHeight = bitmapBob.getHeight();
@@ -196,22 +200,40 @@ public class SimpleGameEngine extends Activity {
             // If bob is moving (the player is touching the screen)
             // then move him to the right based on his target speed and the current fps.
             if(isMoving){
-                bobXPosition = bobXPosition + (walkSpeedPerSecond / fps);
-                if(bobXPosition > nextImagePosition ) {
-                    if (!stepImageDirection) {
-                        gameView.col++;
-                    } else {
-                        gameView.col--;
+                if (movingToRight) {
+                    bobXPosition = bobXPosition + (walkSpeedPerSecond / fps);
+                    if (bobXPosition > nextImagePosition) {
+                        if (!stepImageDirection) {
+                            gameView.col++;
+                        } else {
+                            gameView.col--;
+                        }
+                        nextImagePosition = nextImagePosition + nextCol;
                     }
-                    nextImagePosition = nextImagePosition + nextCol;
+                    if (gameView.col >= 2) {
+                        //revert direction
+                        stepImageDirection = true;
+                    } else if (gameView.col <= 0) {
+                        stepImageDirection = false;
+                    }
                 }
-                if (gameView.col>=2){
-                    //revert direction
-                    stepImageDirection = true;
-                } else if (gameView.col <=0) {
-                    stepImageDirection = false;
+                if (movingToLeft){
+                    bobXPosition = bobXPosition - (walkSpeedPerSecond / fps);
+                    if (bobXPosition < nextImagePosition) {
+                        if (!stepImageDirection) {
+                            gameView.col--;
+                        } else {
+                            gameView.col++;
+                        }
+                        nextImagePosition = nextImagePosition - nextCol;
+                    }
+                    if (gameView.col <= 0) {
+                        //revert direction
+                        stepImageDirection = true;
+                    } else if (gameView.col >= 2) {
+                        stepImageDirection = false;
+                    }
                 }
-
                 cropedImage = GameViewUpdate(col, row);
             }
 
@@ -220,6 +242,7 @@ public class SimpleGameEngine extends Activity {
         // Draw the newly updated scene
         public void draw() {
 
+            String movement = "false";
             // Make sure our drawing surface is valid or we crash
             if (ourHolder.getSurface().isValid()) {
                 // Lock the canvas ready to draw
@@ -234,19 +257,57 @@ public class SimpleGameEngine extends Activity {
                 // Make the text a bit bigger
                 paint.setTextSize(45);
 
+
+
                 // Display the current fps on the screen
                 canvas.drawText("FPS:" + fps, 20, 40, paint);
-                canvas.drawText("row" + row, 20, 80, paint);
-                canvas.drawText("col" + col, 20, 120, paint);
-                canvas.drawText("imageCropWidth" + imageCropWidth, 120, 40, paint);
-                canvas.drawText("imageCropHeight" + imageCropHeight, 120, 80, paint);
-                canvas.drawText("imageWidth" + bitmapBob.getWidth(), 120, 120, paint);
-                canvas.drawText("bobXposition" + bobXPosition, 20, 160, paint);
+                if (DEBUG_MODE) {
+                    canvas.drawText("row" + row, 20, 80, paint);
+                    canvas.drawText("col" + col, 20, 120, paint);
+                    canvas.drawText("imageCropWidth" + imageCropWidth, 220, 40, paint);
+                    canvas.drawText("imageCropHeight" + imageCropHeight, 220, 80, paint);
+                    canvas.drawText("imageWidth" + bitmapBob.getWidth(), 220, 120, paint);
+                    if (isMoving) {
+                        movement = "true";
+                    } else {
+                        movement = "false";
+                    }
+                    canvas.drawText("isMoving " + movement, 420, 40, paint);
+                    canvas.drawText("bobXposition" + bobXPosition, 20, 160, paint);
 
+                    canvas.drawText("x1:" + buttonToLeftArea[0], 20, 500, paint);
+                    canvas.drawText("y1:" + buttonToLeftArea[1], 20, 540, paint);
+                    canvas.drawText("x2:" + buttonToLeftArea[2], 20, 580, paint);
+                    canvas.drawText("y2:" + buttonToLeftArea[3], 20, 620, paint);
+
+                    canvas.drawText("x1:" + buttonToRightArea[0], 20, 660, paint);
+                    canvas.drawText("y1:" + buttonToRightArea[1], 20, 700, paint);
+                    canvas.drawText("x2:" + buttonToRightArea[2], 20, 740, paint);
+                    canvas.drawText("y2:" + buttonToRightArea[3], 20, 780, paint);
+
+                    canvas.drawText("Width:" + buttonToLeft.getWidth(), 20, 840, paint);
+                    canvas.drawText("Height:" + buttonToLeft.getHeight(), 20, 880, paint);
+                    canvas.drawText("Width:" + buttonToRight.getWidth(), 20, 920, paint);
+                    canvas.drawText("Height:" + buttonToRight.getHeight(), 20, 960, paint);
+
+                    paint.setColor(Color.rgb(0, 0, 0));
+                    paint.setStrokeWidth(2);
+                    paint.setStyle(Paint.Style.STROKE);
+                    int p = 10;
+                    canvas.drawRect(buttonToLeftArea[0]+p, buttonToLeftArea[1]+p,
+                            buttonToLeftArea[2]+p, buttonToLeftArea[3]+p, paint);
+
+                    canvas.drawRect(buttonToRightArea[0]+p, buttonToRightArea[1]+p,
+                            buttonToRightArea[2]+p, buttonToRightArea[3]+p, paint);
+
+                }
                 // Draw bob at bobXPosition, 200 pixels
                 canvas.drawBitmap(gameView.cropedImage, bobXPosition, 200, paint);
                 canvas.drawBitmap(buttonToLeft, buttonToLeftArea[0], buttonToLeftArea[1], paint);
                 canvas.drawBitmap(buttonToRight, buttonToRightArea[0], buttonToRightArea[1], paint);
+
+
+
 
                 // Draw everything to the screen
                 ourHolder.unlockCanvasAndPost(canvas);
@@ -285,10 +346,21 @@ public class SimpleGameEngine extends Activity {
                 case MotionEvent.ACTION_DOWN:
 
                     // Set isMoving so Bob is moved in the update method
+
                     int x=  (int)motionEvent.getX();
                     int y = (int)motionEvent.getY();
                     if ( x > buttonToRightArea[0] && x < buttonToRightArea [2]
                             && y > buttonToRightArea[1] && y < buttonToRightArea[3]) {
+                        if (movingToLeft) { col = 1; }
+                        movingToRight = true;
+                        movingToLeft = false;
+                        isMoving = true;
+                    }
+                    if ( x > buttonToLeftArea[0] && x < buttonToLeftArea [2]
+                            && y > buttonToLeftArea[1] && y < buttonToLeftArea[3]) {
+                        if (movingToRight) {col = 1;}
+                        movingToRight = false;
+                        movingToLeft = true;
                         isMoving = true;
                     }
                     break;
